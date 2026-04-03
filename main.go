@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"embed"
 	"fmt"
-    "bufio"
 	"mime"
 	"net"
 	"net/http"
@@ -12,9 +12,8 @@ import (
 	"strings"
 )
 
-// --- 关键修改：打包静态资源 ---
-//假设你的项目结构中有一个 assets 目录存放 css/js，以及同级的 index.html 和 favicon.ico
-//go:embed index.html assets/* favicon.ico
+// --- 静态资源打包 ---
+//go:embed index.html favicon.ico assets/*
 var embeddedFiles embed.FS
 
 var (
@@ -23,57 +22,80 @@ var (
 )
 
 func main() {
-	// 获取当前工作目录（即用户在命令行执行命令时的位置）
+	// 获取执行命令时的当前目录
 	currentDir, _ := os.Getwd()
 
-	// 1. 加载配置（优先查找当前目录下的 viewghost.config，没有则用默认）
+	// 1. 加载配置
 	loadAppConfig(filepath.Join(currentDir, "viewghost.config"))
 
+	// 2. 注册 MIME 类型
 	mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
 	mime.AddExtensionType(".css", "text/css; charset=utf-8")
 
-	// 2. 路由处理
-	// 动态侧边栏：扫描当前命令行所在的目录
-	http.HandleFunc("/_sidebar.md", func(w http.ResponseWriter, r *http.Request) {
-		sidebar := generateSidebar(currentDir)
-		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-		fmt.Fprint(w, sidebar)
-	})
-
-	// 静态资源处理：
-	// 如果请求的是 index.html, assets/*, favicon.ico -> 从【内存(embed)】读取
-	// 如果请求的是 .md 或图片 -> 从【本地磁盘】读取
+    // 3. 核心路由处理
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		reqPath := strings.TrimPrefix(r.URL.Path, "/")
-		
-		// 优先从嵌入资源中查找（index.html, js, css）
-		if reqPath == "" || reqPath == "index.html" || strings.HasPrefix(reqPath, "assets/") || reqPath == "favicon.ico" {
-			if reqPath == "" { reqPath = "index.html" }
-			data, err := embeddedFiles.ReadFile(reqPath)
-			if err == nil {
-				// 手动设置 MIME，因为 embed 文件系统有时无法自动识别
-				if strings.HasSuffix(reqPath, ".css") { w.Header().Set("Content-Type", "text/css") }
-				if strings.HasSuffix(reqPath, ".js") { w.Header().Set("Content-Type", "application/javascript") }
-				w.Write(data)
-				return
-			}
+
+		// --- 1. 动态生成侧边栏 (最高优先级) ---
+		if reqPath == "_sidebar.md" {
+			w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+			fmt.Fprint(w, generateSidebar(currentDir))
+			return
 		}
 
-		// 否则从本地磁盘读取（Markdown 文件、图片等）
+		// --- 2. 根路径 "/"：必须返回 index.html ---
+		if reqPath == "" {
+			data, err := embeddedFiles.ReadFile("index.html")
+			if err != nil {
+				http.Error(w, "Internal Server Error: index.html missing", 500)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache") // 强制不缓存
+			w.Write(data)
+			return
+		}
+
+		// --- 3. 智能 README 拦截 (仅当明确请求 README.md 时) ---
+		if reqPath == "README.md" {
+			localPath := filepath.Join(currentDir, "README.md")
+			fileInfo, err := os.Stat(localPath)
+			// 如果不存在或为空
+			if os.IsNotExist(err) || (err == nil && fileInfo.Size() == 0) {
+				w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+				defaultReadme := "# ViewGhost 👻\n\n> 欢迎使用 **ViewGhost**！\n\n当前目录下未检测到 `README.md`，已自动为你开启**浏览模式**。\n\n### 💡 使用提示\n- **查看文档**：请点击左侧菜单栏浏览当前目录下的 Markdown 文件。\n- **自定义首页**：在当前目录下新建一个 `README.md` 文件即可覆盖此内容。"
+				fmt.Fprint(w, defaultReadme)
+				return
+			}
+			// 如果存在且有内容，则不 return，继续往下走 FileServer 读取磁盘文件
+		}
+
+		// --- 4. 其它静态资源 (assets/*, favicon.ico) ---
+		data, err := embeddedFiles.ReadFile(reqPath)
+		if err == nil {
+			if strings.HasSuffix(reqPath, ".css") { w.Header().Set("Content-Type", "text/css") }
+			if strings.HasSuffix(reqPath, ".js") { w.Header().Set("Content-Type", "application/javascript") }
+			w.Write(data)
+			return
+		}
+
+		// --- 5. 最后：读取本地磁盘文件 (MD, 图片等) ---
 		http.FileServer(http.Dir(currentDir)).ServeHTTP(w, r)
 	})
 
 	fmt.Printf("ViewGhost (Portable Mode) 已启动！\n")
-	fmt.Printf("正在工作目录: %s\n", currentDir)
-	fmt.Printf("访问地址: http://%s:%s\n", getLocalIP(), appPort)
+	fmt.Printf("当前工作路径: %s\n", currentDir)
+	fmt.Printf("本地访问: http://localhost:%s\n", appPort)
+	fmt.Printf("手机访问: http://%s:%s\n", getLocalIP(), appPort)
 
-	http.ListenAndServe(":"+appPort, nil)
+	if err := http.ListenAndServe(":"+appPort, nil); err != nil {
+		fmt.Printf("启动失败: %v\n", err)
+	}
 }
 
-// 增强型配置加载
+// 加载配置
 func loadAppConfig(filename string) {
-	ignored = []string{"node_modules", ".git", "assets", "index.html", "main.go"}
-	
+	ignored = []string{"node_modules", ".git", "assets", "index.html", "main.go", "viewghost.exe", "viewghost.config"}
 	file, err := os.Open(filename)
 	if err != nil {
 		return
@@ -86,8 +108,6 @@ func loadAppConfig(filename string) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-
-		// 识别 PORT= 配置
 		if strings.HasPrefix(strings.ToUpper(line), "PORT=") {
 			parts := strings.Split(line, "=")
 			if len(parts) == 2 && parts[1] != "" {
@@ -95,34 +115,37 @@ func loadAppConfig(filename string) {
 			}
 			continue
 		}
-
-		// 其余作为忽略路径
 		cleanPath := filepath.ToSlash(strings.Trim(line, "/"))
 		ignored = append(ignored, cleanPath)
 	}
 }
 
+// 生成侧边栏
 func generateSidebar(root string) string {
 	var sb strings.Builder
 	sb.WriteString("* [🏠 首页](README.md)\n")
 
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil || path == root { return nil }
-
+		if err != nil || path == root {
+			return nil
+		}
 		rel, _ := filepath.Rel(root, path)
 		webPath := filepath.ToSlash(rel)
 		name := info.Name()
 
-		// 过滤逻辑
 		for _, item := range ignored {
 			if strings.HasPrefix(webPath, item) || name == item {
-				if info.IsDir() { return filepath.SkipDir }
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
 				return nil
 			}
 		}
 
 		if strings.HasPrefix(name, ".") || name == "README.md" {
-			if info.IsDir() { return filepath.SkipDir }
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -139,6 +162,7 @@ func generateSidebar(root string) string {
 	return sb.String()
 }
 
+// 获取局域网 IP
 func getLocalIP() string {
 	addrs, _ := net.InterfaceAddrs()
 	for _, addr := range addrs {

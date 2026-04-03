@@ -2,7 +2,7 @@
 <html lang="zh-cn">
 <head>
   <meta charset="UTF-8">
-  <title>文档预览</title>
+  <title>ViewGhost Document Server</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <link rel="stylesheet" href="assets/vue.css">
@@ -38,14 +38,17 @@
 <body>
   <div id="app">加载中...</div>
   <script>
+	// 强制挂载到 window 对象，防止作用域问题
     window.$docsify = {
-      name: '我的文档',
+      name: 'ViewGhost',
       loadSidebar: true,
-      alias: { '/.*/_sidebar.md': '/_sidebar.md' },
-      subMaxLevel: 3,
-      // 开启 GFM (GitHub Flavored Markdown) 增强表格支持
-      nativeEmoji: true,
-    }
+      auto2top: true,
+      homepage: 'README.md',
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md',
+        '/_sidebar.md': '/_sidebar.md'
+      }
+    };
   </script>
   
   <script src="assets/docsify.min.js"></script>
