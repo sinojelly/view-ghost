@@ -51,38 +51,67 @@ func main() {
 	}
 }
 
+// 改进的配置加载：处理空格、空行和斜杠统一
+func loadConfig(filename string) []string {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		// 默认忽略项，统一不带前后斜杠
+		return []string{"node_modules", ".git", "assets", "main.go", "index.html"}
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	var ignored []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// 统一转为正斜杠并去掉首尾斜杠，例如 "test/" 变成 "test"
+		line = filepath.ToSlash(line)
+		line = strings.Trim(line, "/")
+		ignored = append(ignored, line)
+	}
+	return ignored
+}
+
 func generateSidebar(root string) string {
 	var sb strings.Builder
 	sb.WriteString("* [🏠 首页](README.md)\n")
 
+	ignored := loadConfig("viewghost.config")
+
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil || path == root {
-			return nil
+		if err != nil || path == root { return nil }
+
+		// 获取相对路径并统一为正斜杠格式
+		rel, _ := filepath.Rel(root, path)
+		webPath := filepath.ToSlash(rel)
+		name := info.Name()
+
+		// 检查过滤逻辑
+		for _, item := range ignored {
+			// 匹配逻辑：如果是目录开头匹配，或者文件名完全匹配
+			if strings.HasPrefix(webPath, item) || name == item {
+				if info.IsDir() {
+					return filepath.SkipDir // 关键：跳过整个文件夹的扫描
+				}
+				return nil
+			}
 		}
 
-		name := info.Name()
-		// 排除非 MD 文件和配置文件
-		if strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_") || 
-		   name == "main.go" || name == "index.html" || name == "README.md" {
+		// 基础隐藏逻辑
+		if strings.HasPrefix(name, ".") || name == "README.md" {
 			if info.IsDir() { return filepath.SkipDir }
 			return nil
 		}
 
-		rel, _ := filepath.Rel(root, path)
-		webPath := filepath.ToSlash(rel)
-		
-		// 核心修复：Docsify 的缩进必须是 2 个空格的倍数
-		// 我们根据路径中的 "/" 数量来决定缩进层级
 		depth := strings.Count(webPath, "/")
 		indent := strings.Repeat("  ", depth)
 
 		if info.IsDir() {
-			// 文件夹：显示为加粗文本
 			sb.WriteString(fmt.Sprintf("%s* **%s**\n", indent, name))
 		} else if filepath.Ext(path) == ".md" {
-			// 文件：必须是 [显示名](相对路径)
-			fileName := strings.TrimSuffix(name, ".md")
-			sb.WriteString(fmt.Sprintf("%s* [%s](%s)\n", indent, fileName, webPath))
+			sb.WriteString(fmt.Sprintf("%s* [%s](%s)\n", indent, strings.TrimSuffix(name, ".md"), webPath))
 		}
 		return nil
 	})
