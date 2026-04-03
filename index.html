@@ -1,41 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-cn">
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="https://cdn.staticfile.org/docsify/4.12.2/themes/vue.css">
+  <title>文档预览</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <link rel="stylesheet" href="assets/vue.css">
+  
+  <link rel="stylesheet" href="assets/github.css">
+  
+  <style>
+    /* 3. 关键：解决冲突 */
+    /* 让 Typora 的样式只作用于内容区，不影响侧边栏 */
+    .markdown-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px 15px 40px 15px;
+    }
+    
+    /* 如果 Typora 的表格没出来，强制补丁 */
+    .markdown-section table {
+      display: table !important;
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin-bottom: 1rem !important;
+    }
+    .markdown-section table tr {
+      border-top: 1px solid #dfe2e5 !important;
+      background-color: #fff !important;
+    }
+    .markdown-section table th, .markdown-section table td {
+      border: 1px solid #dfe2e5 !important;
+      padding: 6px 13px !important;
+    }
+  </style>
 </head>
 <body>
-  <div id="app">正在初始化渲染引擎...</div>
-
+  <div id="app">加载中...</div>
   <script>
-    // 强制先定义配置
     window.$docsify = {
-      el: '#app',          // 强制挂载点
-      name: 'MD 预览',
+      name: '我的文档',
       loadSidebar: true,
-      alias: {
-        '/.*/_sidebar.md': '/_sidebar.md'
-      },
-      // 捕获加载错误
-      errorNotFound: function() {
-        console.error("Docsify: 找不到文件！");
-      }
-    };
+      alias: { '/.*/_sidebar.md': '/_sidebar.md' },
+      subMaxLevel: 3,
+      // 开启 GFM (GitHub Flavored Markdown) 增强表格支持
+      nativeEmoji: true,
+    }
   </script>
-
-  <script src="https://cdn.staticfile.org/docsify/4.12.2/docsify.min.js"></script>
-
-  <script>
-    // 强制检查：如果 2 秒后还没请求，手动打印提示
-    setTimeout(() => {
-      if (document.getElementById('app').innerText.includes('正在初始化')) {
-        document.getElementById('app').innerHTML = `
-          <h2 style="color:red">渲染挂起了</h2>
-          <p>请尝试访问: <a href="/_sidebar.md">/_sidebar.md</a> 确保后端活着</p>
-          <p>尝试在控制台输入 <code>$docsify</code> 看是否有输出</p>
-        `;
-      }
-    }, 2000);
-  </script>
+  
+  <script src="assets/docsify.min.js"></script>
+  <script src="assets/search.min.js"></script>
 </body>
 </html>

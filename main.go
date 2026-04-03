@@ -15,6 +15,7 @@ func main() {
     mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
     mime.AddExtensionType(".md", "text/markdown; charset=utf-8")
     mime.AddExtensionType(".html", "text/html; charset=utf-8")
+	mime.AddExtensionType(".css", "text/css")
 
 	// 获取当前执行目录的绝对路径，避免 Windows 相对路径坑
 	executablePath, _ := os.Getwd()
