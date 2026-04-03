@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.staticfile.org/docsify/4.12.2/themes/vue.css">
+</head>
+<body>
+  <div id="app">正在初始化渲染引擎...</div>
+
+  <script>
+    // 强制先定义配置
+    window.$docsify = {
+      el: '#app',          // 强制挂载点
+      name: 'MD 预览',
+      loadSidebar: true,
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
+      // 捕获加载错误
+      errorNotFound: function() {
+        console.error("Docsify: 找不到文件！");
+      }
+    };
+  </script>
+
+  <script src="https://cdn.staticfile.org/docsify/4.12.2/docsify.min.js"></script>
+
+  <script>
+    // 强制检查：如果 2 秒后还没请求，手动打印提示
+    setTimeout(() => {
+      if (document.getElementById('app').innerText.includes('正在初始化')) {
+        document.getElementById('app').innerHTML = `
+          <h2 style="color:red">渲染挂起了</h2>
+          <p>请尝试访问: <a href="/_sidebar.md">/_sidebar.md</a> 确保后端活着</p>
+          <p>尝试在控制台输入 <code>$docsify</code> 看是否有输出</p>
+        `;
+      }
+    }, 2000);
+  </script>
+</body>
+</html>
