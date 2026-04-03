@@ -44,7 +44,8 @@ func main() {
 	fmt.Printf("本地访问: http://localhost:%s\n", port)
 	fmt.Printf("手机访问: http://%s:%s\n", getLocalIP(), port)
 
-	err := http.ListenAndServe(":"+port, nil)
+	// ":" 代表绑定到所有网卡，包括 127.0.0.1 和 192.168.31.194
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Printf("启动失败: %v\n", err)
 	}
@@ -89,10 +90,20 @@ func generateSidebar(root string) string {
 }
 
 func getLocalIP() string {
-	addrs, _ := net.InterfaceAddrs()
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			return ipnet.IP.String()
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	for _, address := range addrs {
+		// 检查 ip 地址判断是否回环
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ipStr := ipnet.IP.String()
+				// 优先返回 192.168 或 10.0 开头的局域网常用地址
+				if strings.HasPrefix(ipStr, "192.168.") || strings.HasPrefix(ipStr, "10.") {
+					return ipStr
+				}
+			}
 		}
 	}
 	return "127.0.0.1"
