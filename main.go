@@ -19,6 +19,8 @@ var embeddedFiles embed.FS
 var (
 	appPort = "8080"
 	ignored []string
+	fileServerPath = "" // 新增：本地文件服务器物理路径
+	fileRoute      = "fs" // 新增：默认访问路由
 )
 
 func main() {
@@ -31,6 +33,16 @@ func main() {
 	// 2. 注册 MIME 类型
 	mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
 	mime.AddExtensionType(".css", "text/css; charset=utf-8")
+
+    // --- 新增调用：注册文件服务器 ---
+	// 注意：FileServer 的路由优先级高于原本的 "/" 拦截，Go 会自动匹配最长的前缀
+	if fileServerPath != "" {
+		RegisterFileServer(FileServerConfig{
+			RoutePath: fileRoute,
+			LocalPath: fileServerPath,
+		})
+		fmt.Printf("文件服务器: http://localhost:%s/%s\n", appPort, fileRoute)
+	}
 
     // 3. 核心路由处理
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +125,15 @@ func loadAppConfig(filename string) {
 			if len(parts) == 2 && parts[1] != "" {
 				appPort = strings.TrimSpace(parts[1])
 			}
+			continue
+		}
+		// 新增：识别 FILE_PATH= 和 FILE_ROUTE=
+		if strings.HasPrefix(strings.ToUpper(line), "FILE_PATH=") {
+			fileServerPath = strings.TrimSpace(line[10:])
+			continue
+		}
+		if strings.HasPrefix(strings.ToUpper(line), "FILE_ROUTE=") {
+			fileRoute = strings.TrimSpace(line[11:])
 			continue
 		}
 		cleanPath := filepath.ToSlash(strings.Trim(line, "/"))
