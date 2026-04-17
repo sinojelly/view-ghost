@@ -68,7 +68,7 @@ services:
 1. **将源码上传到 Linux 服务器**。
 2. **构建镜像**：
    ```bash
-   docker build -t viewghost:v1 .
+   docker build -t viewghost:v1.0 .
    ```
 3. **启动容器**：
    ```bash
