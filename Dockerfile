@@ -1,5 +1,6 @@
 # 第一阶段：编译阶段
-FROM golang:1.21-alpine AS builder
+#FROM golang:1.21-alpine AS builder
+FROM registry.cn-hangzhou.aliyuncs.com/acs/golang:1.21-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -14,7 +15,8 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o viewghost .
 
 # 第二阶段：运行阶段
-FROM alpine:latest
+#FROM alpine:latest
+FROM registry.cn-hangzhou.aliyuncs.com/acs/alpine:latest
 
 WORKDIR /app
 
@@ -29,4 +31,4 @@ COPY --from=builder /app/viewghost /usr/local/bin/viewghost
 EXPOSE 8080
 
 # 运行程序
-ENTRYPOINT ["./viewghost"]
+ENTRYPOINT ["viewghost"]
