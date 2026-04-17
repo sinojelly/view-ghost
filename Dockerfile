@@ -19,9 +19,11 @@ FROM alpine:latest
 WORKDIR /app
 
 # 从编译阶段拷贝二进制文件
-COPY --from=builder /app/viewghost .
+# 将二进制文件拷贝到系统路径，这样无论 /app 怎么挂载，程序都能找到
+COPY --from=builder /app/viewghost /usr/local/bin/viewghost
+
 # 拷贝示例配置文件（或者由用户挂载）
-COPY --from=builder /app/viewghost.config.example ./viewghost.config
+#COPY --from=builder /app/viewghost.config.example ./viewghost.config
 
 # 暴露端口 (根据你的默认配置，通常是 8080)
 EXPOSE 8080
