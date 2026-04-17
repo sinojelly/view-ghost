@@ -1,6 +1,7 @@
 # 第一阶段：编译阶段
 #FROM golang:1.21-alpine AS builder
-FROM registry.cn-hangzhou.aliyuncs.com/acs/golang:1.21-alpine AS builder
+# 使用阿里云公共镜像库中的官方镜像（同步自 Docker Hub）
+FROM registry.cn-hangzhou.aliyuncs.com/dockerhub/library/golang:1.21-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -16,7 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o viewghost .
 
 # 第二阶段：运行阶段
 #FROM alpine:latest
-FROM registry.cn-hangzhou.aliyuncs.com/acs/alpine:latest
+FROM registry.cn-hangzhou.aliyuncs.com/dockerhub/library/alpine:latest
 
 WORKDIR /app
 
