@@ -36,9 +36,8 @@
   </style>
 </head>
 <body>
-  <div id="app">加载中...</div>
+  <div id="app">加载中...</div> 
   <script>
-	// 强制挂载到 window 对象，防止作用域问题
     window.$docsify = {
       name: 'ViewGhost',
       loadSidebar: true,
@@ -47,7 +46,33 @@
       alias: {
         '/.*/_sidebar.md': '/_sidebar.md',
         '/_sidebar.md': '/_sidebar.md'
-      }
+      },
+      // --- 核心修改 1: 确保文件服务器链接被视为外部链接 ---
+      // Docsify 会检查链接，如果匹配这个正则，它就不会拦截处理
+      externalLinkTarget: '_self', // 在当前窗口打开
+      
+      // --- 核心修改 2: 路由黑名单 ---
+      // 告诉 Docsify 忽略 /fileserver 开头的路径
+      noCompileLinks: [
+        '/fileserver/.*'
+      ],
+
+      // 额外的保险：如果通过侧边栏点击，强制跳转
+      plugins: [
+        function(hook, vm) {
+          hook.doneEach(function() {
+            // 每次页面渲染完，检查侧边栏里的文件服务器链接
+            var fsLink = document.querySelector('a[href="/fileserver/"]');
+            if (fsLink) {
+              // 给它加上 data-nosearch 属性，防止 docsify 拦截
+              fsLink.setAttribute('target', '_self');
+              fsLink.onclick = function() {
+                window.location.href = '/fileserver/';
+              };
+            }
+          });
+        }
+      ]
     };
   </script>
   

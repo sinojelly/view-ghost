@@ -1,6 +1,9 @@
 # 配置端口
 PORT=80
 
+# 文件服务器物理路径（你要分享哪个文件夹）
+FILE_PATH=C:\Users\sinoj\Downloads
+
 # 要忽略的文件
 assets/
 test/

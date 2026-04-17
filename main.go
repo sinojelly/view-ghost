@@ -20,7 +20,7 @@ var (
 	appPort = "8080"
 	ignored []string
 	fileServerPath = "" // 新增：本地文件服务器物理路径
-	fileRoute      = "fs" // 新增：默认访问路由
+	fileRoute      = "fileserver" // 新增：默认访问路由，并且不支持配置
 )
 
 func main() {
@@ -41,7 +41,6 @@ func main() {
 			RoutePath: fileRoute,
 			LocalPath: fileServerPath,
 		})
-		fmt.Printf("文件服务器: http://localhost:%s/%s\n", appPort, fileRoute)
 	}
 
     // 3. 核心路由处理
@@ -99,6 +98,9 @@ func main() {
 	fmt.Printf("当前工作路径: %s\n", currentDir)
 	fmt.Printf("本地访问: http://localhost:%s\n", appPort)
 	fmt.Printf("手机访问: http://%s:%s\n", getLocalIP(), appPort)
+	if fileServerPath != "" {
+		fmt.Printf("文件服务器: http://%s:%s/%s\n", getLocalIP(), appPort, fileRoute)
+	}
 
 	if err := http.ListenAndServe(":"+appPort, nil); err != nil {
 		fmt.Printf("启动失败: %v\n", err)
@@ -132,10 +134,10 @@ func loadAppConfig(filename string) {
 			fileServerPath = strings.TrimSpace(line[10:])
 			continue
 		}
-		if strings.HasPrefix(strings.ToUpper(line), "FILE_ROUTE=") {
-			fileRoute = strings.TrimSpace(line[11:])
-			continue
-		}
+		// if strings.HasPrefix(strings.ToUpper(line), "FILE_ROUTE=") {
+		//	fileRoute = "fileserver"  //固定，不允许从配置文件配置。否则index.html就不能写死。 strings.TrimSpace(line[11:])
+		//	continue
+		// }
 		cleanPath := filepath.ToSlash(strings.Trim(line, "/"))
 		ignored = append(ignored, cleanPath)
 	}
@@ -146,6 +148,14 @@ func generateSidebar(root string) string {
 	var sb strings.Builder
 	sb.WriteString("* [🏠 首页](README.md)\n")
 
+	// --- 核心修改：在侧边栏加文件共享入口 ---
+	if fileServerPath != "" {
+		// sb.WriteString("\n---\n") // 分割线
+		// 注意：这里使用特定协议头或特殊路径，方便 index.html 拦截
+		sb.WriteString(fmt.Sprintf("* [📂 文件共享](/%s/)\n", fileRoute))
+		// sb.WriteString("\n---\n") // 分割线
+	}
+
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil || path == root {
 			return nil
@@ -154,8 +164,12 @@ func generateSidebar(root string) string {
 		webPath := filepath.ToSlash(rel)
 		name := info.Name()
 
+		// --- 修改：增加对文件服务器路径的过滤 ---
+		// 获取配置中的本地共享目录名 (例如 "shared-files")
+		sharedDirName := filepath.Base(fileServerPath)
+
 		for _, item := range ignored {
-			if strings.HasPrefix(webPath, item) || name == item {
+			if strings.HasPrefix(webPath, item) || name == item || name == sharedDirName {
 				if info.IsDir() {
 					return filepath.SkipDir
 				}

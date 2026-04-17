@@ -56,7 +56,14 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, localDir, ro
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<html><head><title>Index of %s</title><style>body{font-family:sans-serif;padding:20px;} a{text-decoration:none;color:#0366d6;} a:hover{text-decoration:underline;} .file-item{margin:8px 0;}</style></head><body>", r.URL.Path)
+	
+	// 在 fileserver.go 的 renderDirectoryListing 中修改 style 标签, 使其背景颜色与 Docsify 保持一致
+	fmt.Fprintf(w, "<html><head><style>"+
+    "body{font-family:sans-serif; padding:40px; background:#fff; color:#34495e;}"+
+    "a{color:#42b983; text-decoration:none; font-weight:bold;}"+
+    ".file-item{padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center;}"+
+    "</style></head><body>")
+	
 	fmt.Fprintf(w, "<h2>📂 目录索引: %s</h2><hr>", r.URL.Path)
 	
 	// 返回上一级
