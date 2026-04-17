@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  viewghost:
+    build: .
+    container_name: viewghost-app
+    ports:
+      - "8080:8080"  # 宿主机端口:容器端口
+    volumes:
+      # 挂载文档目录到容器的工作目录（让程序扫描）
+      - "/path/to/your/markdown/docs:/app"
+      # 挂载共享文件目录
+      - "/path/to/your/shared-files:/app/shared-files"
+      # 挂载自定义配置文件
+      - "./viewghost.config:/app/viewghost.config"
+    restart: always
