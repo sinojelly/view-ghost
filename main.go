@@ -150,10 +150,9 @@ func generateSidebar(root string) string {
 
 	// --- 核心修改：在侧边栏加文件共享入口 ---
 	if fileServerPath != "" {
-		// sb.WriteString("\n---\n") // 分割线
-		// 注意：这里使用特定协议头或特殊路径，方便 index.html 拦截
-		sb.WriteString(fmt.Sprintf("* [📂 文件共享](/%s/)\n", fileRoute))
-		// sb.WriteString("\n---\n") // 分割线
+		// --- 修改：指向 Docsify 内部的虚拟路径，而不是后端原始路径 ---
+		// 去掉前面的斜杠，确保 Docsify 将其识别为路径切换而非锚点
+        sb.WriteString("* [📂 文件共享](fileserver-view)\n")
 	}
 
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

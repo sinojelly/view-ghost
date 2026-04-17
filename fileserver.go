@@ -59,9 +59,10 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, localDir, ro
 	
 	// 在 fileserver.go 的 renderDirectoryListing 中修改 style 标签, 使其背景颜色与 Docsify 保持一致
 	fmt.Fprintf(w, "<html><head><style>"+
-    "body{font-family:sans-serif; padding:40px; background:#fff; color:#34495e;}"+
+    "body{font-family:sans-serif; padding:10px 20px; background:#fff; color:#34495e; margin:0;}"+ // 减少 padding 适应 iframe
     "a{color:#42b983; text-decoration:none; font-weight:bold;}"+
-    ".file-item{padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center;}"+
+    ".file-item{padding:12px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; transition: background 0.2s;}"+
+    ".file-item:hover{background: #f9f9f9;}"+ // 增加悬停反馈
     "</style></head><body>")
 	
 	fmt.Fprintf(w, "<h2>📂 目录索引: %s</h2><hr>", r.URL.Path)
