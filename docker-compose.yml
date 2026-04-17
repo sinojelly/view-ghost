@@ -1,15 +1,25 @@
 version: '3.8'
+
 services:
   viewghost:
-    build: .
+    # 使用阿里云私有仓库地址
+    image: crpi-lq7d4rau6bjttgo1.cn-shanghai.personal.cr.aliyuncs.com/sinojelly/viewghost:v1.0
     container_name: viewghost-app
-    ports:
-      - "8080:8080"  # 宿主机端口:容器端口
-    volumes:
-      # 挂载文档目录到容器的工作目录（让程序扫描）
-      - "/path/to/your/markdown/docs:/app"
-      # 挂载共享文件目录
-      - "/path/to/your/shared-files:/app/shared-files"
-      # 挂载自定义配置文件
-      - "./viewghost.config:/app/viewghost.config"
     restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      # 挂载文档目录：将宿主机存放 Markdown 的目录挂载到容器的 /app
+      # 请将左侧的 /your/local/markdown/path 替换为实际路径
+      - "/your/local/markdown/path:/app"
+      
+      # 挂载文件共享目录：将宿主机需要共享的目录挂载到 /app/shared-files
+      # 请将左侧的 /your/local/shared/files 替换为实际路径
+      - "/your/local/shared/files:/app/shared-files"
+      
+      # 挂载配置文件（可选）：如果你想在宿主机修改配置，取消下面一行的注释
+      # - "./viewghost.config:/app/viewghost.config"
+    
+    environment:
+      # 如果你的程序支持通过环境变量传参，可以在这里添加
+      - TZ=Asia/Shanghai
