@@ -46,6 +46,15 @@ func main() {
     // 3. 核心路由处理
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		reqPath := strings.TrimPrefix(r.URL.Path, "/")
+		
+		// 如果请求的是 /fileserver 相关的，但由于某种原因漏到了这里
+		// 我们可以做一个重定向或者错误处理，防止它加载 index.html
+		if strings.HasPrefix(reqPath, fileRoute) {
+			// 正常情况下 RegisterFileServer 应该拦截了它
+			// 如果走到这里，说明路径可能少了斜杠，补全它
+			http.Redirect(w, r, "/"+fileRoute+"/", http.StatusMovedPermanently)
+			return
+		}
 
 		// --- 1. 动态生成侧边栏 (最高优先级) ---
 		if reqPath == "_sidebar.md" {

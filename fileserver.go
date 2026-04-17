@@ -67,19 +67,34 @@ func renderDirectoryListing(w http.ResponseWriter, r *http.Request, localDir, ro
 	
 	fmt.Fprintf(w, "<h2>📂 目录索引: %s</h2><hr>", r.URL.Path)
 	
-	// 返回上一级
-	if subPath != "" && subPath != "/" {
-		fmt.Fprintf(w, "<div class='file-item'><a href='..'>⬆️ 返回上一级</a></div>")
-	}
+	// 修复：计算准确的“上一级”绝对路径
+    // 确保 route 格式为 /fileserver
+    cleanRoute := "/" + strings.Trim(route, "/")
+    
+    // 如果 subPath 已经是在根目录了，就不显示返回上一级
+    if subPath != "" && subPath != "/" && subPath != "." {
+        // 使用 filepath.Dir 获取上一级目录，并转为 URL 格式
+        parentPath := filepath.ToSlash(filepath.Dir(strings.TrimSuffix(subPath, "/")))
+        if parentPath == "." {
+            parentPath = ""
+        }
+        // 构造绝对路径： /fileserver/ + parentPath
+        parentURL := cleanRoute + "/" + strings.TrimPrefix(parentPath, "/")
+        fmt.Fprintf(w, "<div class='file-item'><a href='%s'>⬆️ 返回上一级</a></div>", parentURL)
+    }
 
-	for _, f := range files {
-		name := f.Name()
-		if f.IsDir() {
-			name += "/"
-		}
-		// 拼接下载链接
-		fmt.Fprintf(w, "<div class='file-item'><a href='%s'>%s %s</a></div>", filepath.ToSlash(filepath.Join(r.URL.Path, f.Name())), getIcon(f), name)
-	}
+	// ... 后续遍历文件的 a 标签也建议使用绝对路径防止丢失上下文 ...
+    for _, f := range files {
+        name := f.Name()
+        linkName := name
+        if f.IsDir() {
+            name += "/"
+            linkName += "/"
+        }
+        // 使用绝对路径跳转： /fileserver/subpath/name
+        fullLink := filepath.ToSlash(filepath.Join(r.URL.Path, linkName))
+        fmt.Fprintf(w, "<div class='file-item'><a href='%s'>%s %s</a></div>", fullLink, getIcon(f), name)
+    }
 	fmt.Fprintf(w, "<hr><p style='font-size:0.8em;color:#888;'>ViewGhost File Server Mode</p></body></html>")
 }
 
