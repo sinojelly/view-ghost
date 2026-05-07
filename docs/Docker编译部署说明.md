@@ -72,9 +72,9 @@ services:
    ```
 3. **启动容器**：
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
-
+注：没有连字符是2.x版本。docker compose version 可以查看版本号。要使用2.x的版本(Go语言编写)才行。1.x的Python版本已经不再维护。
 ---
 
 ### 4. 针对 Linux 环境的 `viewghost.config` 调整

@@ -7,7 +7,7 @@ services:
     container_name: viewghost-app
     restart: always
     ports:
-      - "8080:8080"
+      - "8080:8080"  # 宿主机端口:容器端口
     volumes:
       # 挂载文档目录：将宿主机存放 Markdown 的目录挂载到容器的 /app
       # 请将左侧的 /your/local/markdown/path 替换为实际路径
