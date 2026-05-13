@@ -112,7 +112,8 @@ func main() {
 	}
 
 	if err := http.ListenAndServe(":"+appPort, nil); err != nil {
-		fmt.Printf("启动失败: %v\n", err)
+		fmt.Printf("启动失败，请检查如果端口冲突，在工作目录添加 viewghost.config，里面写上一个不冲突的端口号，比如： PORT=8083\n")
+		fmt.Printf("错误信息 : %v\n", err)
 	}
 }
 
@@ -198,7 +199,9 @@ func generateSidebar(root string) string {
 		if info.IsDir() {
 			sb.WriteString(fmt.Sprintf("%s* **%s**\n", indent, name))
 		} else if filepath.Ext(path) == ".md" {
-			sb.WriteString(fmt.Sprintf("%s* [%s](%s)\n", indent, strings.TrimSuffix(name, ".md"), webPath))
+			// 将相对路径中的空格替换为网页标准的 %20，防止破坏 Markdown 语法
+			safeWebPath := strings.ReplaceAll(webPath, " ", "%20")
+			sb.WriteString(fmt.Sprintf("%s* [%s](%s)\n", indent, strings.TrimSuffix(name, ".md"), safeWebPath))
 		}
 		return nil
 	})
